@@ -2,9 +2,10 @@
 import os
 import pandas as pd
 import datetime
+import chardet
 
-PATH_SRT = "data/ХИТ-ПАРАД МАРТ 2020.srt"
-TIMECODE_TO_MEDIA = "data/ХИТ-ПАРАД МАРТ 2020.xls"
+PATH_SRT = "data/ПРГРМ-001655.srt"
+TIMECODE_TO_MEDIA = "data/ПРГРМ-001655.xls"
 
 time_codes = pd.read_excel(TIMECODE_TO_MEDIA, header=None)
 
@@ -21,7 +22,17 @@ except:
 print(time_codes)
 
 # открываем файл .srt разделяем строки и формируем строки для таблицы
-with open(PATH_SRT, 'r', encoding="utf-16-le") as f:
+with open(PATH_SRT, 'rb') as f:
+    ENCODING = chardet.detect(f.read())["encoding"]
+
+if not '16-LE' in ENCODING:
+    print(f'CHANGE ENCODING FROM {ENCODING} to {"UTF-16-LE"}')
+    with open(PATH_SRT, 'r', encoding=ENCODING) as f:
+        content = f.read()
+    with open(PATH_SRT, 'w', encoding="UTF-16-LE") as f:
+        f.write(content)
+
+with open(PATH_SRT, 'r', encoding="UTF-16-LE") as f:
     srt = f.read().replace("\n\n", "\n").split("\n")
     idx, rows = 0, []
     while idx < len(srt) - 1:
@@ -32,7 +43,7 @@ with open(PATH_SRT, 'r', encoding="utf-16-le") as f:
 srt = pd.DataFrame(columns=["part", "time", "text"],
                     data=rows)
 
-print(srt.head(50))
+print(srt.head())
 # начало и окончание субтитра преобразуем к формату datetime
 srt["start"] = srt["time"].map(lambda x: datetime.datetime.strptime(x.split(" --> ")[0], "%H:%M:%S,%f"))
 srt["end"] = srt["time"].map(lambda x: datetime.datetime.strptime(x.split(" --> ")[1], "%H:%M:%S,%f"))
