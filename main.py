@@ -22,9 +22,11 @@ except:
 print(time_codes)
 
 # открываем файл .srt разделяем строки и формируем строки для таблицы
+# определяем кодировку файла
 with open(PATH_SRT, 'rb') as f:
     ENCODING = chardet.detect(f.read())["encoding"]
 
+# если кодировка отлична от UTF-16-LE то перекодируем
 if not '16-LE' in ENCODING:
     print(f'CHANGE ENCODING FROM {ENCODING} to {"UTF-16-LE"}')
     with open(PATH_SRT, 'r', encoding=ENCODING) as f:
