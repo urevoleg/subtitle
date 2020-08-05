@@ -4,8 +4,8 @@ import pandas as pd
 import datetime
 import chardet
 
-PATH_SRT = "data/ПРГРМ-001179.srt"
-TIMECODE_TO_MEDIA = "data/ПРГРМ-001179.xls"
+PATH_SRT = "data/ПРГРМ-001655.srt"
+TIMECODE_TO_MEDIA = "data/ПРГРМ-001655.xls"
 
 time_codes = pd.read_excel(TIMECODE_TO_MEDIA, header=None)
 
@@ -26,37 +26,29 @@ print(time_codes)
 with open(PATH_SRT, 'rb') as f:
     ENCODING = chardet.detect(f.read())["encoding"]
 
-print(f'CHANGE ENCODING FROM {ENCODING} to {"UTF-16-LE"}')
 # если кодировка отлична от UTF-16-LE то перекодируем
-"""
 if not '16-LE' in ENCODING:
     print(f'CHANGE ENCODING FROM {ENCODING} to {"UTF-16-LE"}')
     with open(PATH_SRT, 'r', encoding=ENCODING) as f:
         content = f.read()
     with open(PATH_SRT, 'w', encoding="UTF-16-LE") as f:
         f.write(content)
-"""
+
 with open(PATH_SRT, 'r', encoding="UTF-16-LE") as f:
-    srt = f.read().replace("\n\n", "&").split("&")
+    srt = f.read().replace("\n\n", "\n").split("\n")
     idx, rows = 0, []
     while idx < len(srt) - 1:
-        rows.append(srt[idx].split('\n', 2))
+        rows.append(srt[idx:idx+3])
         idx += 3
 
 # создаем таблицу из субтитров
 srt = pd.DataFrame(columns=["part", "time", "text"],
                     data=rows)
 
-print(pd.concat([srt.head(), srt.tail()], axis=1))
-
+print(srt.head())
 # начало и окончание субтитра преобразуем к формату datetime
-# разделяем время на начало и конец
-srt["start"] = srt["time"].map(lambda x: x.split(" --> ")[0])
-srt["end"] = srt["time"].map(lambda x: x.split(" --> ")[1])
-
-# преобразуем время
-srt["start"] = pd.to_datetime(srt["start"], format="%H:%M:%S,%f")
-srt["end"] = pd.to_datetime(srt["end"], format="%H:%M:%S,%f")
+srt["start"] = srt["time"].map(lambda x: datetime.datetime.strptime(x.split(" --> ")[0], "%H:%M:%S,%f"))
+srt["end"] = srt["time"].map(lambda x: datetime.datetime.strptime(x.split(" --> ")[1], "%H:%M:%S,%f"))
 
 # фильтруем нужную часть и склеиваем нужные части для формирования новых субтитров
 # первая часть отдельно
